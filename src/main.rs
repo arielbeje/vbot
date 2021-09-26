@@ -1,4 +1,4 @@
-use std::env;
+use std::{env, sync::Arc};
 
 use serenity::{
     async_trait, client::bridge::gateway::GatewayIntents, framework::StandardFramework, http::Http,
@@ -8,6 +8,8 @@ use tracing::{error, info};
 
 pub mod commands;
 use commands::*;
+pub mod db;
+use db::Db;
 
 struct Handler;
 
@@ -23,6 +25,8 @@ async fn main() {
     tracing_subscriber::fmt::init();
 
     let token = env::var("VBOT_TOKEN").expect("Expected a token in the environment");
+
+    let db = Db::new().await.expect("Failed to initialize database");
 
     let http = Http::new_with_token(&token);
     let app_info = http
@@ -45,6 +49,11 @@ async fn main() {
         .intents(GatewayIntents::all())
         .await
         .expect("Error creating client");
+
+    {
+        let mut data = client.data.write().await;
+        data.insert::<Db>(Arc::new(db));
+    };
 
     if let Err(why) = client.start().await {
         error!("Client error: {:?}", why);
