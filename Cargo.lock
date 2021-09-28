@@ -1641,6 +1641,7 @@ dependencies = [
  "anyhow",
  "serenity",
  "sqlx",
+ "thiserror",
  "tokio",
  "tracing",
  "tracing-subscriber",

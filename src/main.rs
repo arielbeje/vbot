@@ -1,8 +1,15 @@
 use std::{env, sync::Arc};
 
 use serenity::{
-    async_trait, client::bridge::gateway::GatewayIntents, framework::StandardFramework, http::Http,
-    model::gateway::Ready, prelude::*,
+    async_trait,
+    client::{self, bridge::gateway::GatewayIntents},
+    framework::{
+        standard::{macros::hook, CommandResult},
+        StandardFramework,
+    },
+    http::Http,
+    model::{channel::Message, gateway::Ready},
+    prelude::*,
 };
 use tracing::{error, info};
 
@@ -10,6 +17,8 @@ pub mod commands;
 use commands::*;
 pub mod db;
 use db::Db;
+pub mod extensions;
+use extensions::*;
 
 struct Handler;
 
@@ -41,7 +50,9 @@ async fn main() {
                 .prefix(",")
         })
         .help(&help::VBOT_HELP)
-        .group(&GENERAL_GROUP);
+        .group(&GENERAL_GROUP)
+        .group(&FAQ_GROUP)
+        .after(after);
 
     let mut client = Client::builder(&token)
         .event_handler(Handler)
@@ -57,5 +68,18 @@ async fn main() {
 
     if let Err(why) = client.start().await {
         error!("Client error: {:?}", why);
+    }
+}
+
+#[hook]
+async fn after(ctx: &client::Context, msg: &Message, _command_name: &str, result: CommandResult) {
+    if let Err(err) = result {
+        if let Some(err) = err.downcast_ref::<UserErr>() {
+            match err {
+                UserErr::Other(issue) => {
+                    let _ = msg.reply_error(ctx, issue).await;
+                }
+            }
+        }
     }
 }
