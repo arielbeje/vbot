@@ -75,11 +75,7 @@ async fn main() {
 async fn after(ctx: &client::Context, msg: &Message, _command_name: &str, result: CommandResult) {
     if let Err(err) = result {
         if let Some(err) = err.downcast_ref::<UserErr>() {
-            match err {
-                UserErr::Other(issue) => {
-                    let _ = msg.reply_error(ctx, issue).await;
-                }
-            }
+            let _ = msg.reply_error(ctx, format!("{}", err).as_str()).await;
         }
     }
 }
