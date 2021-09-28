@@ -37,3 +37,27 @@ pub async fn faq(ctx: &client::Context, msg: &Message, args: Args) -> CommandRes
 
     Ok(())
 }
+
+#[command("new")]
+#[aliases("add")]
+#[only_in(guilds)]
+#[usage("faq new <title> <conent>")]
+pub async fn faq_new(ctx: &client::Context, msg: &Message, mut args: Args) -> CommandResult {
+    let db = ctx.get_db().await;
+    let guild_id = msg.guild_id.context("couldn't get guild ID")?;
+
+    let title = args
+        .single_quoted::<String>()
+        .invalid_usage(&FAQ_NEW_COMMAND_OPTIONS)?;
+    let content = args.remains().invalid_usage(&FAQ_NEW_COMMAND_OPTIONS)?;
+
+    db.add_faq_tag(guild_id, title.as_str(), content).await?;
+
+    msg.reply_embed(ctx, |e| {
+        e.title(format!("Successfully added \"{}\" to database", title));
+        e.description(content);
+    })
+    .await?;
+
+    Ok(())
+}

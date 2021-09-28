@@ -56,6 +56,31 @@ WHERE faq_titles.guild=?
             content: rec.content,
         }))
     }
+
+    pub async fn add_faq_tag(&self, guild_id: GuildId, title: &str, content: &str) -> Result<()> {
+        let mut conn = self.pool.acquire().await?;
+        let guild = guild_id.0 as i64;
+
+        let content_id = sqlx::query_scalar!(
+            // Specifying id type is a temporary fix, waiting for sqlx to properly support RETURNING
+            r#"INSERT INTO faq_content (guild, content) VALUES (?, ?) RETURNING id AS "id: i64""#,
+            guild,
+            content
+        )
+        .fetch_one(&mut conn)
+        .await?;
+
+        sqlx::query!(
+            "INSERT INTO faq_titles (guild, title, content_id) VALUES (?, ?, ?)",
+            guild,
+            title,
+            content_id
+        )
+        .execute(&mut conn)
+        .await?;
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, sqlx::FromRow)]

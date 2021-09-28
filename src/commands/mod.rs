@@ -25,6 +25,7 @@ pub mod help;
 
 #[group]
 #[prefix("faq")]
+#[commands(faq_new)]
 #[default_command(faq)]
 struct Faq;
 
